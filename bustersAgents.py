@@ -169,9 +169,9 @@ class GreedyBustersAgent(BustersAgent):
             for living in livingGhostPositionDistributions:
                 ghostLikelyPosition = living.argMax()
                 distance = self.distancer.getDistance(ghostLikelyPosition, successorPosition)
+
                 if distance != 0:
                     value[action] = value[action] + 100/distance
-            print(action, value[action])
 
 
         return value.argMax()
