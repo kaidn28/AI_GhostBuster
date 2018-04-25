@@ -440,6 +440,15 @@ class JointParticleFilter:
         weight with each position) is incorrect and may produce errors.
         """
         "*** YOUR CODE HERE ***"
+        legalPossibleMultiGhostPositions = list(itertools.product(self.legalPositions, repeat=self.numGhosts))
+        # print(itertools.product([5,5,5,5], repeat = 3))
+
+        particlePositions = [legalPossibleMultiGhostPositions[i % len(legalPossibleMultiGhostPositions)] for i in range(self.numParticles)]
+        # particlePositions = list()
+        # for i in range(self.numParticles):
+        #             particlePositions.append(legalPossibleMultiGhostPositions)
+        self.particles = particlePositions
+        return self.particles
 
     def addGhostAgent(self, agent):
         """
@@ -482,9 +491,31 @@ class JointParticleFilter:
         """
         pacmanPosition = gameState.getPacmanPosition()
         noisyDistances = gameState.getNoisyGhostDistances()
+        beliefs = self.getBeliefDistribution()
+        allPossible = util.Counter()
         if len(noisyDistances) < self.numGhosts:
             return
         emissionModels = [busters.getObservationDistribution(dist) for dist in noisyDistances]
+        for particleIndex in range(self.numParticles):
+            for ghostAgent in range(self.numGhosts):
+                if noisyDistances[ghostAgent] == None:
+                        self.particles[particleIndex][ghostAgent] = self.getParticleWithGhostInJail(self.particles[particleIndex][ghostAgent], ghostAgent)
+                else:
+                    trueDistance = util.manhattanDistance(self.particles[particleIndex][ghostAgent], pacmanPosition)
+                    if emissionModels[ghostAgent][trueDistance] > 0:
+                        ghostBelief = emissionModels[ghostAgent][trueDistance]*beliefs[particleIndex]
+                allPossible[self.particles[particleIndex]]+= ghostBelief
+            if allPossible.totalCount() == 0:
+                self.initializeParticles()
+                for particleIndex in range(self.numParticles):
+                    for ghostAgent in range(self.numGhosts):
+                        if noisyDistances[ghostAgent] == None:
+                            self.particles[particleIndex][ghostAgent] = self.getParticleWithGhostInJail(self.particles[particleIndex][ghostAgent], ghostAgent)
+            else:
+                self.particles =[util.sample(allPossible) for i in range(self.numParticles)]
+
+
+
 
         "*** YOUR CODE HERE ***"
 
@@ -554,7 +585,13 @@ class JointParticleFilter:
 
     def getBeliefDistribution(self):
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        beliefDistribution = util.Counter()
+        #  since the belief is that ghost are uniformally distributed accross legal positions
+        # setting the belief to 1.0, meaning the particle can be anywhere in the grid.
+        for particle in self.particles:
+            beliefDistribution[particle] +=1.0
+        beliefDistribution.normalize()
+        return beliefDistribution
 
 # One JointInference module is shared globally across instances of MarginalInference
 jointInference = JointParticleFilter()
