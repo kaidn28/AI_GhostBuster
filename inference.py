@@ -526,8 +526,7 @@ class JointParticleFilter:
             # otherwise sampled from the allPossible positions
             allPossible.normalize()
             newParticle = list()
-            for _ in range(self.numParticles):
-                newParticle.append(util.sample(allPossible))
+            newParticle = [util.sample(allPossible) for i in range(self.numParticles)]
             self.particles = newParticle
        
         # for particleIndex in range(self.numParticles):
